@@ -1,10 +1,6 @@
 import axios from 'axios'
 
-const rawBase = process.env.NEXT_PUBLIC_API_URL
-
-if (!rawBase) {
-  throw new Error('NEXT_PUBLIC_API_URL is not configured')
-}
+const rawBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 const baseURL = `${rawBase.replace(/\/+$/, '')}/api/v1`
 
@@ -90,7 +86,18 @@ export const authApi = {
 
   me: () =>
     api.get('/auth/me').then((r) => r.data),
+
+  resetPassword: (data: {
+    email: string
+    new_password: string
+    confirm_password?: string
+  }) =>
+    api.post('/auth/reset-password', data).then((r) => r.data),
+
+  verifyAccount: (email: string) =>
+    api.get('/auth/verify-account', { params: { email } }).then((r) => r.data),
 }
+
 
 export const predictApi = {
   predict: (data: {

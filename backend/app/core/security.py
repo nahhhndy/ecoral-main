@@ -27,21 +27,24 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 
 def create_access_token(subject: str, extra: dict[str, Any] | None = None) -> str:
-    expire = datetime.now(UTC) + timedelta(
+    now = datetime.now(UTC)
+    expire = now + timedelta(
         minutes=_settings.access_token_expire_minutes
     )
-    payload: dict[str, Any] = {"sub": subject, "exp": expire, "type": "access"}
+    payload: dict[str, Any] = {"sub": subject, "exp": expire, "iat": int(now.timestamp()), "type": "access"}
     if extra:
         payload.update(extra)
     return jwt.encode(payload, _settings.jwt_secret_key, algorithm=_settings.jwt_algorithm)
 
 
 def create_refresh_token(subject: str) -> str:
-    expire = datetime.now(UTC) + timedelta(
+    now = datetime.now(UTC)
+    expire = now + timedelta(
         days=_settings.refresh_token_expire_days
     )
-    payload: dict[str, Any] = {"sub": subject, "exp": expire, "type": "refresh"}
+    payload: dict[str, Any] = {"sub": subject, "exp": expire, "iat": int(now.timestamp()), "type": "refresh"}
     return jwt.encode(payload, _settings.jwt_secret_key, algorithm=_settings.jwt_algorithm)
+
 
 
 def decode_token(token: str) -> dict[str, Any]:

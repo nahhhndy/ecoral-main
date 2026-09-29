@@ -69,3 +69,9 @@ async def create_tables() -> None:
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Ensure password_changed_at column exists for existing databases
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE users ADD COLUMN password_changed_at DATETIME"))
+        except Exception:
+            pass

@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
+from datetime import UTC
 from typing import TYPE_CHECKING
+
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -54,7 +56,19 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found or inactive",
         )
+    token_iat = payload.get("iat")
+    if token_iat and user.password_changed_at:
+        pwd_changed_dt = user.password_changed_at
+        if pwd_changed_dt.tzinfo is None:
+            pwd_changed_dt = pwd_changed_dt.replace(tzinfo=UTC)
+        if token_iat < int(pwd_changed_dt.timestamp()):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Session invalidated due to password reset. Please sign in again.",
+            )
     return user
+
+
 
 
 async def get_optional_user(

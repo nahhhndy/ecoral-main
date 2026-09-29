@@ -1,7 +1,7 @@
 """UserRepository for user data access."""
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.models.user import User
@@ -13,8 +13,12 @@ class UserRepository(BaseRepository[User]):
         super().__init__(User, db)
 
     async def get_by_email(self, email: str) -> User | None:
-        result = await self.db.execute(select(User).where(User.email == email))
+        clean_email = email.strip().lower()
+        result = await self.db.execute(
+            select(User).where(func.lower(User.email) == clean_email)
+        )
         return result.scalar_one_or_none()
+
 
     async def email_exists(self, email: str) -> bool:
         user = await self.get_by_email(email)

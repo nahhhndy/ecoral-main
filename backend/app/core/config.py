@@ -4,9 +4,14 @@ from __future__ import annotations
 
 import json
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
+_DEFAULT_DB_PATH = _ROOT_DIR / "ecoral.db"
+_DEFAULT_DB_URL = f"sqlite+aiosqlite:///{_DEFAULT_DB_PATH.as_posix()}"
 
 
 class Settings(BaseSettings):
@@ -29,9 +34,8 @@ class Settings(BaseSettings):
     # ---------------------------------------------------------
     # Database
     # ---------------------------------------------------------
-    database_url: str = (
-        "postgresql+asyncpg://ecoral:password@localhost:5432/ecoral"
-    )
+    database_url: str = _DEFAULT_DB_URL
+
 
     # ---------------------------------------------------------
     # Redis

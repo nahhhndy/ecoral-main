@@ -1,7 +1,8 @@
 """AuthService handling registration, login, and token management."""
 from __future__ import annotations
 
-from datetime import UTC
+from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,10 +19,13 @@ from backend.app.models.user import User
 from backend.app.repositories.user import UserRepository
 from backend.app.schemas.auth import (
     LoginRequest,
+    MessageResponse,
     RegisterRequest,
+    ResetPasswordRequest,
     TokenResponse,
     UserResponse,
 )
+
 
 settings = get_settings()
 
@@ -68,7 +72,44 @@ class AuthService:
         tokens = self._create_tokens(user)
         return user, tokens
 
+    async def verify_account(self, email: str) -> dict[str, Any]:
+        user = await self.user_repo.get_by_email(email)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No account found with this email address",
+            )
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Account is deactivated",
+            )
+        return {"exists": True, "email": user.email, "full_name": user.full_name}
+
+    async def reset_password(self, request: ResetPasswordRequest) -> MessageResponse:
+        import asyncio
+        user = await self.user_repo.get_by_email(request.email)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No account found with this email address",
+            )
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Account is deactivated",
+            )
+        hashed_pwd = await asyncio.to_thread(hash_password, request.new_password)
+        user.hashed_password = hashed_pwd
+        user.password_changed_at = datetime.now(UTC)
+        await self.user_repo.save(user)
+        return MessageResponse(
+            message="Password changed successfully. Please sign in with your new password.",
+            status="success",
+        )
+
     async def refresh(self, refresh_token: str) -> TokenResponse:
+
         try:
             payload = decode_token(refresh_token)
         except ValueError:

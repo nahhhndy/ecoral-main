@@ -17,6 +17,20 @@ const schema = z.object({
 })
 type FormData = z.infer<typeof schema>
 
+function formatApiError(e: any, fallback: string): string {
+  if (e?.code === 'ECONNABORTED' || e?.message?.includes('timeout')) {
+    return 'Registration request timed out. Please check your connection and try again.'
+  }
+  const detail = e?.response?.data?.detail
+  if (typeof detail === 'string') {
+    return detail
+  }
+  if (Array.isArray(detail) && detail.length > 0) {
+    return detail[0]?.msg || fallback
+  }
+  return e?.message || fallback
+}
+
 export default function RegisterPage() {
   const router = useRouter()
   const { login } = useAuth()
@@ -36,15 +50,12 @@ export default function RegisterPage() {
       await login(res.access_token, res.refresh_token)
       router.push('/dashboard')
     } catch (e: any) {
-      if (e?.code === 'ECONNABORTED' || e?.message?.includes('timeout')) {
-        setError('Registration request timed out. Please try again.')
-      } else {
-        setError(e?.response?.data?.detail || 'Registration failed. Email may already be registered.')
-      }
+      setError(formatApiError(e, 'Registration failed. Email may already be registered.'))
     } finally {
       setIsRegistering(false)
     }
   }
+
   
   return (
     <div className="min-h-screen flex items-center justify-center px-6 bg-[#07131E] text-[#F5FAFC]">
