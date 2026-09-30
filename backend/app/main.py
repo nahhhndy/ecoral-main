@@ -21,9 +21,6 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("Starting EcoRal API server", env=settings.app_env)
-    # Pre-load ML model into memory
-    model_loader.get_model()
-    logger.info("ML Model pre-loaded successfully")
     # Initialize DB tables
     await create_tables()
     logger.info("Database tables initialized")

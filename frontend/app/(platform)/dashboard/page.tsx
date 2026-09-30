@@ -33,9 +33,41 @@ import { z } from 'zod'
 import { predictApi } from '@/lib/api'
 import { PredictionResult } from '@/types'
 import { useDashboardData } from '@/lib/hooks/useDashboardData'
-import ScenarioSimulator from '@/components/simulation/ScenarioSimulator'
-import GlobalIntelligenceWidget from '@/components/intelligence/GlobalIntelligenceWidget'
-import BleachingForecastingWidget from '@/components/forecasting/BleachingForecastingWidget'
+import dynamic from 'next/dynamic'
+
+const ScenarioSimulator = dynamic(
+  () => import('@/components/simulation/ScenarioSimulator'),
+  {
+    loading: () => (
+      <div className="h-64 rounded-xl border border-[#24475F] bg-[#0C1C2A] flex items-center justify-center">
+        <span className="text-xs text-[#8FA6B8] animate-pulse">Loading Simulation Engine...</span>
+      </div>
+    ),
+  }
+)
+
+const GlobalIntelligenceWidget = dynamic(
+  () => import('@/components/intelligence/GlobalIntelligenceWidget'),
+  {
+    loading: () => (
+      <div className="h-64 rounded-xl border border-[#24475F] bg-[#0C1C2A] flex items-center justify-center">
+        <span className="text-xs text-[#8FA6B8] animate-pulse">Loading Intelligence Telemetry...</span>
+      </div>
+    ),
+  }
+)
+
+const BleachingForecastingWidget = dynamic(
+  () => import('@/components/forecasting/BleachingForecastingWidget'),
+  {
+    loading: () => (
+      <div className="h-64 rounded-xl border border-[#24475F] bg-[#0C1C2A] flex items-center justify-center">
+        <span className="text-xs text-[#8FA6B8] animate-pulse">Loading Forecasting Widget...</span>
+      </div>
+    ),
+  }
+)
+
 
 const predictSchema = z.object({
   latitude: z.coerce.number().min(-90, 'Min -90').max(90, 'Max 90'),

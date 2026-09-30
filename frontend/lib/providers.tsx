@@ -11,7 +11,7 @@ const queryClient = new QueryClient({
 interface AuthContext {
   user: User | null
   isLoading: boolean
-  login: (token: string, refreshToken: string) => Promise<User>
+  login: (token: string, refreshToken: string, userData?: User) => Promise<User>
   logout: () => void
 }
 
@@ -41,18 +41,25 @@ function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
   
-  const login = async (token: string, refreshToken: string): Promise<User> => {
+  const login = async (token: string, refreshToken: string, userData?: User): Promise<User> => {
     queryClient.clear()
     localStorage.setItem('access_token', token)
     localStorage.setItem('refresh_token', refreshToken)
-    try {
-      const userData = await authApi.me()
+    if (userData) {
       setUser(userData)
+      setIsLoading(false)
       return userData
+    }
+    try {
+      const fetchedUser = await authApi.me()
+      setUser(fetchedUser)
+      setIsLoading(false)
+      return fetchedUser
     } catch (e) {
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
       setUser(null)
+      setIsLoading(false)
       queryClient.clear()
       throw e
     }

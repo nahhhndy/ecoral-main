@@ -30,7 +30,20 @@ type ResetFormData = z.infer<typeof resetSchema>
 
 function formatApiError(e: any, fallback: string): string {
   if (e?.code === 'ECONNABORTED' || e?.message?.includes('timeout')) {
-    return 'Request timed out. Please check your connection and try again.'
+    return 'Authentication service is taking too long. Please try again.'
+  }
+  if (e?.message === 'Network Error' || e?.code === 'ERR_NETWORK') {
+    return 'Unable to connect to the authentication service.'
+  }
+  const status = e?.response?.status
+  if (status === 401) {
+    return 'Invalid email or password.'
+  }
+  if (status === 403) {
+    return e?.response?.data?.detail || 'Account is deactivated. Please contact support.'
+  }
+  if (status >= 500) {
+    return 'Authentication service error. Please try again later.'
   }
   const detail = e?.response?.data?.detail
   if (typeof detail === 'string') {
@@ -39,7 +52,7 @@ function formatApiError(e: any, fallback: string): string {
   if (Array.isArray(detail) && detail.length > 0) {
     return detail[0]?.msg || fallback
   }
-  return e?.message || fallback
+  return fallback
 }
 
 function LoginFormContent() {
@@ -102,19 +115,30 @@ function LoginFormContent() {
   }, [searchParams, setLoginValue, setResetValue])
 
   const onLoginSubmit = async (data: LoginFormData) => {
+    if (isAuthenticating) return
     setError('')
     setSuccessMessage('')
     setIsAuthenticating(true)
+
     try {
       const res = await authApi.login(data)
-      await login(res.access_token, res.refresh_token)
+
+      if (!res?.access_token) {
+        throw new Error('Authentication response did not return an access token')
+      }
+
+      // Immediately establish session with user profile if included
+      await login(res.access_token, res.refresh_token, res.user)
       router.push('/dashboard')
     } catch (e: any) {
-      setError(formatApiError(e, 'Invalid email or password'))
+      console.error('[AUTH] Login authentication failed:', e)
+      setError(formatApiError(e, 'Unable to sign in. Please try again.'))
     } finally {
       setIsAuthenticating(false)
     }
   }
+
+
 
   const onResetSubmit = async (data: ResetFormData) => {
     setResetError('')

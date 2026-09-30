@@ -70,33 +70,36 @@ api.interceptors.response.use(
   }
 )
 
+import { TokenResponse, User } from '@/types'
+
 export const authApi = {
   register: (data: {
     email: string
     full_name: string
     password: string
-  }) =>
-    api.post('/auth/register', data).then((r) => r.data),
+  }): Promise<TokenResponse> =>
+    api.post('/auth/register', data, { timeout: 8000 }).then((r) => r.data),
 
   login: (data: {
     email: string
     password: string
-  }) =>
-    api.post('/auth/login', data).then((r) => r.data),
+  }): Promise<TokenResponse> =>
+    api.post('/auth/login', data, { timeout: 8000 }).then((r) => r.data),
 
-  me: () =>
-    api.get('/auth/me').then((r) => r.data),
+  me: (): Promise<User> =>
+    api.get('/auth/me', { timeout: 8000 }).then((r) => r.data),
 
   resetPassword: (data: {
     email: string
     new_password: string
     confirm_password?: string
   }) =>
-    api.post('/auth/reset-password', data).then((r) => r.data),
+    api.post('/auth/reset-password', data, { timeout: 8000 }).then((r) => r.data),
 
   verifyAccount: (email: string) =>
-    api.get('/auth/verify-account', { params: { email } }).then((r) => r.data),
+    api.get('/auth/verify-account', { params: { email }, timeout: 8000 }).then((r) => r.data),
 }
+
 
 
 export const predictApi = {
